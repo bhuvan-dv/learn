@@ -1,7 +1,11 @@
 from fastapi import FastAPI
 from models import Product
+from database import session, engine
+from database_model import Base
 
 app = FastAPI()
+
+Base.metadata.create_all(bind=engine)
 
 
 @app.get("/")

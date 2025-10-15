@@ -1,11 +1,25 @@
 from fastapi import FastAPI
 from models import Product
 from database import session, engine
-from database_model import Base
+import database_model
 
 app = FastAPI()
 
-Base.metadata.create_all(bind=engine)
+database_model.Base.metadata.create_all(bind=engine)
+
+
+def init_db():
+    db = session()
+
+    count = db.query(database_model.Product).count
+    if count == 0:
+        for product in products:
+            db.add(database_model.Product(**product.model_dump()))
+    # in the above line we can't use Pydantic model for inserting data into DB
+    # so we convert our pydantic model into of database_model
+    # such that convert pydantic object using model_dump() which gives you a dictionary
+    # and then we unpack it using ** finally getting key value pair and create Product object for you
+    db.commit()
 
 
 @app.get("/")
@@ -26,6 +40,19 @@ products = [
         quantity=10000,
     ),
 ]
+
+init_db()
+
+
+def get_db():
+    db = session()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+get_db()
 
 
 @app.get("/products")
